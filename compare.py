@@ -1,53 +1,19 @@
-import ast
 import numpy as np
+import argparse
+
+def init_argparse():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('input', help='location of input file')
+    parser.add_argument('output', help='location of output file')
+    args = parser.parse_args()
+    return args
 
 
-# При сравнении текстов программ нас не интересуют комментарии, docstrings и имена перемынных,
-# так как плагиатер может легко изменить их, не нарушая работу программы.
-# Удалим их, оставив только нужный нам синтаксис.
-def normalize_files(tree) -> str:
+def normalize(s: str) -> str:
+    return s.replace(' ', '').replace('\n', '').lower()
 
-    for node in ast.walk(my_tree):
 
-        # if hasattr(node, 'id'):
-        #     print(node.id)
-        #     node.id = 'TEST'
-        #     print(node.id)
-
-        # let's work only on functions & classes definitions
-        if not isinstance(node, (ast.FunctionDef, ast.ClassDef, ast.AsyncFunctionDef, ast.Module)):
-            continue
-        
-        # if not isinstance(node, ast.Module):
-        #     print(node.name)
-        #     node.name = ''
-        #     print(node.name)
-
-        # if node is empty - skip it
-        if not len(node.body):
-            continue
-
-        if not isinstance(node.body[0], ast.Expr):
-            continue
-
-        if not hasattr(node.body[0], 'value') or not isinstance(node.body[0].value, ast.Str):
-            continue
-
-        # Uncomment lines below if you want print what and where we are removing
-        #print(node)
-        
-        #print(node.body[0].value.s)
-
-        node.body = node.body[1:]
-
-        # unparsing deletes newlines and comments
-    result = ast.unparse(my_tree)
-    result = result.replace(' ', '').replace('\n', '')
-
-    return result
-
-# Done
-def levenshtein_distance(s1: str, s2: str):
+def levenshtein_distance(s1: str, s2: str) -> float:
 
     # add spaces at the start of the strings
     s1 = ' ' + s1
@@ -56,7 +22,7 @@ def levenshtein_distance(s1: str, s2: str):
     # initialize distance array with zeroes
     dist = np.zeros((len(s1), len(s2)), dtype=int)
 
-    # getting from empty string to target string is straightforward
+    # fill first column and first row in dist
     for i in range(1, len(s1)):
         dist[i, 0] = i
     
@@ -76,28 +42,41 @@ def levenshtein_distance(s1: str, s2: str):
                 dist[i-1, j-1] + subst_cost
             )
 
-    print(dist, '\n')
+    # uncomment to print distance matrix
+    #print(dist, '\n')
 
     return abs(dist[len(s1)-1, len(s2)-1] / len(s1)-1)
 
 
 if __name__ == '__main__':
 
-    with open('files/cars196.py', 'r') as f:
-        # my_tree = ast.parse(f.read())
-        # file1 = normalize_files(my_tree)
-        file1 = f.read().replace(' ', '').replace('\n', '')
+    # read program arguments
+    args = init_argparse()
 
-    with open('plagiat2/cars196.py', 'r') as f:
-        # my_tree = ast.parse(f.read())
-        # file2 = normalize_files(my_tree)
-        file2 = f.read().replace(' ', '').replace('\n', '')
-    
-    score = levenshtein_distance(file1, file2)
-    print(score)
+    # clear output file
+    with open(args.output,'a+') as f:
+        f.truncate(0)
 
-    # with open('out.py', 'w') as f:
-    #     f.write(result)
+    with open(args.input, 'r') as f:
 
-    #normalize_files(my_tree)
+        file_names = f.readline().split()
 
+        while file_names:
+            
+            print('COMPARING', file_names[0], 'TO', file_names[1])
+
+            with open(file_names[0], 'r') as file1:
+                string1 = normalize(file1.read())
+
+            with open(file_names[1], 'r') as file2:
+                string2 = normalize(file2.read())
+
+            score = round(levenshtein_distance(string1, string2), 2)
+            print('Score:', score, '\n')
+
+            with open(args.output, 'a') as out:
+                out.write(str(score) + '\n')
+
+            # update
+            file_names = f.readline().split()
+            

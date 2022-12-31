@@ -1,0 +1,5 @@
+files/arima.py plagiat1/arima.py
+files/auto.py plagiat1/auto.py
+files/auto.py plagiat2/auto.py
+files/base.py plagiat1/base.py
+files/tbats.py plagiat2/tbats.py
